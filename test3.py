@@ -44,20 +44,6 @@ class TestCase(object):
         return self._translate() + "\n" + str(self.traces)
 
 
-def gen_random_ord():
-    price = random.randint(1, MAX_PRICE)
-    qty = random.randint(1, MAX_QTY)
-    is_buy = random.random() < 0.5
-    min_qty = 0 if random.random() < 0.5 else random.randint(0, qty)
-    disclosed_qty = 0 if random.random() < 0.5 else random.randint(0, qty)
-    return [price, qty, is_buy, min_qty, disclosed_qty]
-
-
-def gen_random_test_case():
-    ord_num = MAX_TC_SIZE
-    return TestCase([gen_random_ord() for i in range(ord_num)])
-
-
 algorithm_param = {
     'max_num_iteration': 1000,
     'population_size': 100,
