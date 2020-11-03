@@ -129,6 +129,7 @@ def main():
     ts = decode_ts(best_variable)
     print("%d tests" % len(ts))
     print("%d stmts" % len(set(chain(*map(lambda tc: tc.traces, ts)))))
+    print("report: %s" % report)
     print("\n\n".join(map(lambda tc: repr(tc), ts)))
     save_test_suite_feed(ts, argv[1])
 
