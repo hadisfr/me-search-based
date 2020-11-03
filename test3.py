@@ -2,8 +2,6 @@
 
 
 from itertools import chain
-import random
-import string
 import subprocess
 from sys import argv, stderr
 
@@ -36,20 +34,18 @@ class TestCase(object):
         return "\n".join([str(len(self.ords))] + [TestCase._translate_ord(ord) for ord in self.ords])
 
     def _calc_test_case_trace(self):
-        tmp_file_addr = TMP_FILE_ADDR + ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
-        with open(tmp_file_addr, 'w') as f:
+        with open(TMP_FILE_ADDR, 'w') as f:
             print(self._translate(), file=f)
 
-        process = subprocess.Popen([TRACE_CALC_ADDR, tmp_file_addr], stdout=subprocess.PIPE)
+        process = subprocess.Popen([TRACE_CALC_ADDR, TMP_FILE_ADDR], stdout=subprocess.PIPE)
         output, error = process.communicate()
         return set(output.decode("utf-8").split())
 
     def gen_test_case_feed(self):
-        tmp_file_addr = TMP_FILE_ADDR + ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
-        with open(tmp_file_addr, 'w') as f:
+        with open(TMP_FILE_ADDR, 'w') as f:
             print(self._translate(), file=f)
 
-        process = subprocess.Popen([TRACE_FEDD_ADDR, tmp_file_addr], stdout=subprocess.PIPE)
+        process = subprocess.Popen([TRACE_FEDD_ADDR, TMP_FILE_ADDR], stdout=subprocess.PIPE)
         output, error = process.communicate()
         return output.decode("utf-8")
 
