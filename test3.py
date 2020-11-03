@@ -5,6 +5,7 @@ from itertools import chain
 import random
 import string
 import subprocess
+from sys import argv, stderr
 
 import numpy as np
 from geneticalgorithm import geneticalgorithm as ga
@@ -18,6 +19,7 @@ MAX_TC_SIZE = 10
 MAX_TS_SIZE = 40
 TMP_FILE_ADDR = "/tmp/wdajdjkfhslfj"
 TRACE_CALC_ADDR = "../me/GetTCTrace"
+TRACE_FEDD_ADDR = "../me/GetTCTrades"
 VERBOSE = False
 
 
@@ -41,6 +43,15 @@ class TestCase(object):
         process = subprocess.Popen([TRACE_CALC_ADDR, tmp_file_addr], stdout=subprocess.PIPE)
         output, error = process.communicate()
         return set(output.decode("utf-8").split())
+
+    def gen_test_case_feed(self):
+        tmp_file_addr = TMP_FILE_ADDR + ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
+        with open(tmp_file_addr, 'w') as f:
+            print(self._translate(), file=f)
+
+        process = subprocess.Popen([TRACE_FEDD_ADDR, tmp_file_addr], stdout=subprocess.PIPE)
+        output, error = process.communicate()
+        return output.decode("utf-8")
 
     def __repr__(self):
         return self._translate() + "\n" + str(self.traces)
@@ -96,6 +107,17 @@ def main():
             print(ts_size, len(covered_stmts), score)
         return score
 
+    def gen_test_suite_feed(ts):
+        return "".join(map(lambda tc: tc.gen_test_case_feed(), ts))
+
+    def save_test_suite_feed(ts, addr):
+        with open(addr, "w") as f:
+            f.write(gen_test_suite_feed(ts))
+
+    if len(argv) != 2:
+        print("usage:\t%s <output feed file>" % argv[0], file=stderr)
+        exit(2)
+
     varbound = np.array((
         [[0, 1]] + [[0, MAX_PRICE], [0, MAX_QTY], [0, 1], [0, MAX_MODAL_QTY], [0, MAX_MODAL_QTY]] * MAX_TC_SIZE
         ) * MAX_TS_SIZE)
@@ -111,8 +133,8 @@ def main():
     ts = decode_ts(best_variable)
     print("%d tests" % len(ts))
     print("%d stmts" % len(set(chain(*map(lambda tc: tc.traces, ts)))))
-    print(ts)
-    print(report)
+    print("\n\n".join(map(lambda tc: repr(tc), ts)))
+    save_test_suite_feed(ts, argv[1])
 
 
 if __name__ == '__main__':
