@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-RNUNNE="./test3.py"
+RNUNNE="./ga.py"
 PREF="ga"
 
-# RNUNNE="./test4.py"
+# RNUNNE="./sa.py"
 # PREF="sa"
 
 N=10
