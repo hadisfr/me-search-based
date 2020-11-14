@@ -16,8 +16,8 @@ ORD_ENCODED_SIZE = 5
 MAX_TC_SIZE = 10
 MAX_TS_SIZE = 40
 TMP_FILE_ADDR = "/tmp/wdajdjkfhslfj"
-TRACE_CALC_ADDR = "../me/GetTCTrace"
-TRACE_FEDD_ADDR = "../me/GetTCTrades"
+TRACE_CALC_ADDR = "../me-spec/GetTCTrace"
+TRACE_FEDD_ADDR = "../me-spec/GetTCTrades"
 VERBOSE = False
 
 
