@@ -41,11 +41,11 @@ class TestCase(object):
 
     @staticmethod
     def _translate_credit(broker, credit):
-        return "SetCreditRq %s %s " % (broker + 1, credit)
+        return "SetCreditRq %d %d" % (broker + 1, credit)
 
     @staticmethod
     def _translate_share(shareholder, share):
-        return "SetOwnershipRq %s %s " % (shareholder + 1, share)
+        return "SetOwnershipRq %d %d" % (shareholder + 1, share)
 
     def _translate(self):
         return "\n".join(sum([
@@ -74,23 +74,6 @@ class TestCase(object):
 
     def __repr__(self):
         return self._translate() + "\n" + str(self.traces)
-
-
-def gen_random_ord():
-    broker = random.randint(1, BROKER_NUMBERS)
-    shareholder = random.randint(1, SHAREHOLDER_NUMBERS)
-    price = random.randint(1, MAX_PRICE)
-    qty = random.randint(1, MAX_QTY)
-    is_buy = random.random() < 0.5
-    min_qty = 0 if random.random() < 0.5 else random.randint(0, qty)
-    is_fak = random.random() < 0.5
-    disclosed_qty = 0 if random.random() < 0.5 else random.randint(0, qty)
-    return [broker, shareholder, price, qty, is_buy, min_qty, is_fak, disclosed_qty]
-
-
-def gen_random_test_case():
-    ord_num = MAX_TC_SIZE
-    return TestCase([], [], [gen_random_ord() for i in range(ord_num)])
 
 
 def decode_tc(tc_encoded):
