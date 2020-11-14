@@ -1,12 +1,23 @@
 #!/usr/bin/env bash
 
-RNUNNE="./ga.py"
-PREF="ga"
+if [[ $# -ne 2 ]]; then
+    echo -e "usage:\t$0 <ga|sa> #_of_iterations"
+    exit 2
+fi
 
-# RNUNNE="./sa.py"
-# PREF="sa"
 
-N=10
+if [[ $1 == "ga" ]]; then
+    RNUNNE="./ga.py"
+    PREF="ga"
+elif [[ $1 == "sa" ]]; then
+    RNUNNE="./sa.py"
+    PREF="sa"
+else
+    echo -e "usage:\t$0 <ga|sa> #_of_iterations"
+    exit 2
+fi
+
+N=$2
 
 # set -o xtrace
 
