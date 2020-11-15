@@ -92,7 +92,7 @@ def decode_tc(tc_encoded):
             and ord[7] > ord[3]  # disclosed quantity
         ):
             continue
-        if ord[7] > 0 and (ord[6] or ord[5] > 0):  # iceberg with fak or minimum quantity
+        if ord[7] > 0 and ord[6]:  # iceberg with fak
             continue
         ords.append(ord)
     if len(ords) > 0:
