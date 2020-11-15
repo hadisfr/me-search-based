@@ -87,9 +87,9 @@ def decode_tc(tc_encoded):
         ord[6] = ord[6] == 1  # fak
         if (
             ord[2] == 0  # pice
-            and ord[3] == 0  # quantity
-            and ord[5] > ord[3]  # minimum quantity
-            and ord[7] > ord[3]  # disclosed quantity
+            or ord[3] == 0  # quantity
+            or ord[5] > ord[3]  # minimum quantity
+            or ord[7] > ord[3]  # disclosed quantity
         ):
             continue
         if ord[7] > 0 and ord[6]:  # iceberg with fak
