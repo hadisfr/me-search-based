@@ -99,12 +99,15 @@ def main():
             ord[4] = ord[4] == 1  # side
             ord[6] = ord[6] == 1  # fak
             if (
-                ord[2] > 0  # pice
-                and ord[3] > 0  # quantity
-                and ord[5] <= ord[3]  # minimum quantity
-                and ord[7] <= ord[3]  # disclosed quantity
+                ord[2] == 0  # pice
+                and ord[3] == 0  # quantity
+                and ord[5] > ord[3]  # minimum quantity
+                and ord[7] > ord[3]  # disclosed quantity
             ):
-                ords.append(ord)
+                continue
+            if ord[7] > 0 and (ord[6] or ord[5] > 0):  # iceberg with fak or minimum quantity
+                continue
+            ords.append(ord)
         if len(ords) > 0:
             return TestCase(credits, shares, ords)
         return None
