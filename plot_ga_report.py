@@ -2,6 +2,7 @@
 
 import ast
 from sys import argv, stderr
+from itertools import cycle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -19,12 +20,13 @@ def read_reports(addr):
 
 
 def plot(reports):
+    linecycler = cycle(["-", "--", "-.", ":"])
     for i in range(len(reports)):
-        plt.plot(np.array(reports[i]), label="run #%d" % (i + 1))
+        plt.plot(np.array(reports[i]), linestyle=next(linecycler), label="run #%d" % (i + 1))
     plt.xlabel('Iteration')
     plt.ylabel('Objective function')
     # plt.title('Genetic Algorithm')
-    plt.legend()
+    # plt.legend()
     # plt.show()
 
 
