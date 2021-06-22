@@ -169,7 +169,7 @@ def main():
     ) * MAX_TS_SIZE)
     model = ga(function=lambda x: -fitness(x), dimension=(MAX_TS_SIZE * TC_ENCODED_SIZE),
                variable_type='int', variable_boundaries=varbound,
-               no_plot=True,
+               convergence_curve=False,
                algorithm_parameters=algorithm_param
                )
 
