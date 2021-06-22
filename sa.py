@@ -23,8 +23,8 @@ MAX_SHARE = 20
 TC_ENCODED_SIZE = 1 + BROKER_NUMBERS + SHAREHOLDER_NUMBERS + MAX_TC_SIZE * ORD_ENCODED_SIZE
 
 TMP_FILE_ADDR = "/tmp/wdajdjkfhslfj"
-TRACE_CALC_ADDR = "../me-spec/GetTCTrace"
-TRACE_FEDD_ADDR = "../me-spec/GetTCTrades"
+TRACE_CALC_ADDR = "../me-haskell/dist/build/GetTCTraces/GetTCTraces --traces"
+TRACE_FEDD_ADDR = "../me-haskell/dist/build/GetTCTraces/GetTCTraces --trades"
 VERBOSE = False
 
 
@@ -37,15 +37,15 @@ class TestCase(object):
 
     @staticmethod
     def _translate_ord(ord):
-        return " ".join([str(spec) for spec in ord])
+        return "NewOrderRq\t%s" % "\t".join([str(spec) for spec in ord])
 
     @staticmethod
     def _translate_credit(broker, credit):
-        return "SetCreditRq %d %d" % (broker + 1, credit)
+        return "SetCreditRq\t%d\t%d" % (broker + 1, credit)
 
     @staticmethod
     def _translate_share(shareholder, share):
-        return "SetOwnershipRq %d %d" % (shareholder + 1, share)
+        return "SetOwnershipRq\t%d\t%d" % (shareholder + 1, share)
 
     def _translate(self):
         return "\n".join(sum([
@@ -60,7 +60,7 @@ class TestCase(object):
         with open(TMP_FILE_ADDR, 'w') as f:
             print(self._translate(), file=f)
 
-        process = subprocess.Popen([TRACE_CALC_ADDR, TMP_FILE_ADDR], stdout=subprocess.PIPE)
+        process = subprocess.Popen(TRACE_CALC_ADDR.split() + [TMP_FILE_ADDR], stdout=subprocess.PIPE)
         output, error = process.communicate()
         return set(output.decode("utf-8").split())
 
@@ -68,7 +68,7 @@ class TestCase(object):
         with open(TMP_FILE_ADDR, 'w') as f:
             print(self._translate(), file=f)
 
-        process = subprocess.Popen([TRACE_FEDD_ADDR, TMP_FILE_ADDR], stdout=subprocess.PIPE)
+        process = subprocess.Popen(TRACE_FEDD_ADDR.split() + [TMP_FILE_ADDR], stdout=subprocess.PIPE)
         output, error = process.communicate()
         return output.decode("utf-8")
 
