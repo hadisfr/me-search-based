@@ -3,10 +3,12 @@
 
 from itertools import chain
 import random
-import subprocess
 from sys import argv, stderr
 
 from simanneal import Annealer
+
+from haskell_adaptor import ArrayDecoder, save_test_suite_feed
+
 
 MAX_PRICE = 10
 MAX_QTY = 10
@@ -20,100 +22,8 @@ MIN_CREDIT = 50
 MAX_CREDIT = 200
 MIN_SHARE = 5
 MAX_SHARE = 20
-TC_ENCODED_SIZE = 1 + BROKER_NUMBERS + SHAREHOLDER_NUMBERS + MAX_TC_SIZE * ORD_ENCODED_SIZE
 
-TMP_FILE_ADDR = "/tmp/wdajdjkfhslfj"
-TRACE_CALC_ADDR = "../me-haskell/dist/build/GetTCTraces/GetTCTraces --traces"
-TRACE_FEDD_ADDR = "../me-haskell/dist/build/GetTCTraces/GetTCTraces --trades"
 VERBOSE = False
-
-
-class TestCase(object):
-    def __init__(self, credits, shares, ords):
-        self.credits = credits
-        self.shares = shares
-        self.ords = ords
-        self.traces = self._calc_test_case_trace()
-
-    @staticmethod
-    def _translate_ord(ord):
-        return "NewOrderRq\t%s" % "\t".join([str(spec) for spec in ord])
-
-    @staticmethod
-    def _translate_credit(broker, credit):
-        return "SetCreditRq\t%d\t%d" % (broker + 1, credit)
-
-    @staticmethod
-    def _translate_share(shareholder, share):
-        return "SetOwnershipRq\t%d\t%d" % (shareholder + 1, share)
-
-    def _translate(self):
-        return "\n".join(sum([
-            [str(len(self.credits) + len(self.shares))],
-            [str(len(self.ords))],
-            [TestCase._translate_credit(broker, credit) for (broker, credit) in enumerate(self.credits)],
-            [TestCase._translate_share(shareholder, share) for (shareholder, share) in enumerate(self.shares)],
-            [TestCase._translate_ord(ord) for ord in self.ords],
-        ], []))
-
-    def _calc_test_case_trace(self):
-        with open(TMP_FILE_ADDR, 'w') as f:
-            print(self._translate(), file=f)
-
-        process = subprocess.Popen(TRACE_CALC_ADDR.split() + [TMP_FILE_ADDR], stdout=subprocess.PIPE)
-        output, error = process.communicate()
-        return set(output.decode("utf-8").split())
-
-    def gen_test_case_feed(self):
-        with open(TMP_FILE_ADDR, 'w') as f:
-            print(self._translate(), file=f)
-
-        process = subprocess.Popen(TRACE_FEDD_ADDR.split() + [TMP_FILE_ADDR], stdout=subprocess.PIPE)
-        output, error = process.communicate()
-        return output.decode("utf-8")
-
-    def __repr__(self):
-        return self._translate() + "\n" + str(self.traces)
-
-
-def decode_tc(tc_encoded):
-    credits = tc_encoded[:BROKER_NUMBERS]
-    shares = tc_encoded[BROKER_NUMBERS:SHAREHOLDER_NUMBERS + BROKER_NUMBERS]
-    ords_encoded = tc_encoded[SHAREHOLDER_NUMBERS + BROKER_NUMBERS:]
-    ords = []
-    for j in range(MAX_TC_SIZE):
-        ord = [int(spec) for spec in ords_encoded[j * ORD_ENCODED_SIZE:(j + 1) * ORD_ENCODED_SIZE]]
-        ord[4] = ord[4] == 1  # side
-        ord[6] = ord[6] == 1  # fak
-        if (
-            ord[2] == 0  # pice
-            or ord[3] == 0  # quantity
-            or ord[5] > ord[3]  # minimum quantity
-            or ord[7] > ord[3]  # disclosed quantity
-        ):
-            continue
-        if ord[7] > 0 and ord[6]:  # iceberg with fak
-            continue
-        ords.append(ord)
-    if len(ords) > 0:
-        return TestCase(credits, shares, ords)
-    return None
-
-
-def decode_ts(ts_encoded):
-    ts = []
-    for i in range(MAX_TS_SIZE):
-        is_in_idx = i * TC_ENCODED_SIZE
-        ts_encoded[is_in_idx] = ts_encoded[is_in_idx] == 1
-        if not ts_encoded[is_in_idx]:
-            continue
-        tc_encoded = ts_encoded[
-            i * TC_ENCODED_SIZE + 1:(i + 1) * TC_ENCODED_SIZE
-        ]
-        tc = decode_tc(tc_encoded)
-        if tc is not None:
-            ts.append(tc)
-    return ts
 
 
 varbound = (
@@ -134,18 +44,19 @@ varbound = (
 
 
 class TestSuiteOptimizer(Annealer):
-    def __init__(self):
+    def __init__(self, decoder):
         init_state = [random.randint(l, u) for (l, u) in varbound]
+        self.decoder = decoder
         super(TestSuiteOptimizer, self).__init__(init_state)
 
     def move(self):
         idx = random.randint(0, len(self.state) - 1)
         self.state[idx] = random.randint(varbound[idx][0], varbound[idx][1])
-        # idx = random.randint(0, MAX_TS_SIZE - 1) * TC_ENCODED_SIZE
+        # idx = random.randint(0, MAX_TS_SIZE - 1) * self.decoder.tc_encoded_size
         # self.state[idx] = 0 if self.state[idx] == 1 else 0
 
     def energy(self):
-        traces = list(map(lambda tc: tc.traces, decode_ts(self.state)))
+        traces = list(map(lambda tc: tc.traces, self.decoder.decode_ts(self.state)))
 
         ts_size = len(traces)
         covered_stmts = set(chain(*traces))
@@ -156,24 +67,14 @@ class TestSuiteOptimizer(Annealer):
         return score
 
 
-def gen_test_suite_feed(ts):
-    return "\n".join([
-        str(len(ts)),
-        "".join(map(lambda tc: tc.gen_test_case_feed(), ts)),
-    ])
-
-
-def save_test_suite_feed(ts, addr):
-    with open(addr, "w") as f:
-        f.write(gen_test_suite_feed(ts))
-
-
 def main():
     if len(argv) != 2:
         print("usage:\t%s <output feed file>" % argv[0], file=stderr)
         exit(2)
 
-    optimizer = TestSuiteOptimizer()
+    decoder = ArrayDecoder(BROKER_NUMBERS, SHAREHOLDER_NUMBERS, ORD_ENCODED_SIZE, MAX_TC_SIZE, MAX_TS_SIZE)
+
+    optimizer = TestSuiteOptimizer(decoder)
     # optimizer.set_schedule(optimizer.auto(minutes=1))
     optimizer.copy_strategy = "slice"
 
@@ -181,7 +82,7 @@ def main():
 
     print("")
     print(score)
-    ts = decode_ts(state)
+    ts = decoder.decode_ts(state)
     print("%d tests" % len(ts))
     print("%d stmts" % len(set(chain(*map(lambda tc: tc.traces, ts)))))
     print("\n\n".join(map(lambda tc: repr(tc), ts)))
