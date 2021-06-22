@@ -60,6 +60,7 @@ def main():
         [(0, 1)]
         + [(MIN_CREDIT, MAX_CREDIT)] * BROKER_NUMBERS
         + [(MIN_SHARE, MAX_SHARE)] * SHAREHOLDER_NUMBERS
+        + [(0, MAX_PRICE)]  # reference price
         + [
             (1, BROKER_NUMBERS),  # broker ID
             (1, SHAREHOLDER_NUMBERS),  # shareholder ID
