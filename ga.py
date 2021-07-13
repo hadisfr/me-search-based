@@ -13,7 +13,7 @@ from haskell_adaptor import ArrayDecoder, save_test_suite_feed
 MAX_PRICE = 10
 MAX_QTY = 10
 MAX_MODAL_QTY = 3
-ORD_ENCODED_SIZE = 8
+ORD_ENCODED_SIZE = 9
 MAX_TC_SIZE = 10
 MAX_TS_SIZE = 40
 BROKER_NUMBERS = 5
@@ -62,6 +62,7 @@ def main():
         + [(MIN_SHARE, MAX_SHARE)] * SHAREHOLDER_NUMBERS
         + [(0, MAX_PRICE)]  # reference price
         + [
+            (0, MAX_TC_SIZE*3-1),  # order ID
             (1, BROKER_NUMBERS),  # broker ID
             (1, SHAREHOLDER_NUMBERS),  # shareholder ID
             (0, MAX_PRICE),  # price

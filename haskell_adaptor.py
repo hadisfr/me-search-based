@@ -9,6 +9,7 @@ TRACE_FEDD_ADDR = "../me-haskell/dist/build/GetTCTraces/GetTCTraces --trades"
 
 @dataclass
 class Order:
+    order_id: ...
     broker_id: ...
     shareholder_id: ...
     price: ...
@@ -25,11 +26,21 @@ class TestCase:
         self.shares = shares
         self.reference_price = reference_price
         self.ords = ords
+        self.translated_orders = 0
+        self.translated = self._translate()
         self.traces = self._calc_test_case_trace()
 
     @staticmethod
-    def _translate_ord(order):
-        return "NewOrderRq\t%s" % "\t".join([str(spec) for spec in astuple(order)])
+    def _translate_new_ord(order):
+        return "NewOrderRq\t%s" % "\t".join([str(spec) for spec in list(astuple(order))[1:]])
+
+    @staticmethod
+    def _translate_replace_ord(order, original_id):
+        return "ReplaceOrderRq\t%s" % "\t".join([str(spec) for spec in [original_id] + list(astuple(order))[1:]])
+
+    @staticmethod
+    def _translate_cancel_ord(order, original_id):
+        return "CancelOrderRq\t%s" % "\t".join([str(spec) for spec in [original_id, order.side]])
 
     @staticmethod
     def _translate_credit(broker, credit):
@@ -43,6 +54,20 @@ class TestCase:
     def _translate_reference_price(reference_price):
         return "SetReferencePrice\t%d" % (reference_price)
 
+    def _translate_ord(self, order):
+        raw_original_id = order.order_id
+        original_id = raw_original_id % 3
+        if self.translated_orders:
+            original_id %= self.translated_orders
+        self.translated_orders += 1
+
+        if raw_original_id % 3 == 0:
+            return TestCase._translate_new_ord(order)
+        elif raw_original_id % 3 == 1:
+            return TestCase._translate_replace_ord(order, original_id)
+        elif raw_original_id % 3 == 2:
+            return TestCase._translate_cancel_ord(order, original_id)
+
     def _translate(self):
         return "\n".join(sum([
             [str(len(self.credits) + len(self.shares) + 1)],
@@ -50,12 +75,12 @@ class TestCase:
             [TestCase._translate_credit(broker, credit) for (broker, credit) in enumerate(self.credits)],
             [TestCase._translate_share(shareholder, share) for (shareholder, share) in enumerate(self.shares)],
             [TestCase._translate_reference_price(self.reference_price)],
-            [TestCase._translate_ord(order) for order in self.ords],
+            [self._translate_ord(order) for order in self.ords],
         ], []))
 
     def _calc_test_case_trace(self):
         with open(TMP_FILE_ADDR, 'w') as f:
-            print(self._translate(), file=f)
+            print(self.translated, file=f)
 
         process = subprocess.Popen(TRACE_CALC_ADDR.split() + [TMP_FILE_ADDR], stdout=subprocess.PIPE)
         output, error = process.communicate()
@@ -63,14 +88,14 @@ class TestCase:
 
     def gen_test_case_feed(self):
         with open(TMP_FILE_ADDR, 'w') as f:
-            print(self._translate(), file=f)
+            print(self.translated, file=f)
 
         process = subprocess.Popen(TRACE_FEDD_ADDR.split() + [TMP_FILE_ADDR], stdout=subprocess.PIPE)
         output, error = process.communicate()
         return output.decode("utf-8")
 
     def __repr__(self):
-        return self._translate() + "\n" + str(self.traces)
+        return self.translated + "\n" + str(self.traces)
 
 
 class ArrayDecoder:
