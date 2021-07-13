@@ -1,9 +1,22 @@
 import subprocess
+from dataclasses import dataclass, astuple
 
 
 TMP_FILE_ADDR = "/tmp/wdajdjkposlf"
 TRACE_CALC_ADDR = "../me-haskell/dist/build/GetTCTraces/GetTCTraces --traces"
 TRACE_FEDD_ADDR = "../me-haskell/dist/build/GetTCTraces/GetTCTraces --trades"
+
+
+@dataclass
+class Order:
+    broker_id: ...
+    shareholder_id: ...
+    price: ...
+    qty: ...
+    side: ...
+    min_qty: ...
+    fak: ...
+    disclosed_qty: ...
 
 
 class TestCase(object):
@@ -16,7 +29,7 @@ class TestCase(object):
 
     @staticmethod
     def _translate_ord(order):
-        return "NewOrderRq\t%s" % "\t".join([str(spec) for spec in order])
+        return "NewOrderRq\t%s" % "\t".join([str(spec) for spec in astuple(order)])
 
     @staticmethod
     def _translate_credit(broker, credit):
@@ -76,17 +89,18 @@ class ArrayDecoder:
         ords_encoded = tc_encoded[self.shareholder_numbers + self.broker_numbers + 1:]
         ords = []
         for j in range(self.max_tc_size):
-            order = [int(spec) for spec in ords_encoded[j * self.ord_encoded_size:(j + 1) * self.ord_encoded_size]]
-            order[4] = order[4] == 1  # side
-            order[6] = order[6] == 1  # fak
+            order = Order(*[int(spec)
+                            for spec in ords_encoded[j * self.ord_encoded_size:(j + 1) * self.ord_encoded_size]])
+            order.side = order.side == 1
+            order.fak = order.fak == 1
             if (
-                order[2] == 0  # pice
-                or order[3] == 0  # quantity
-                or order[5] > order[3]  # minimum quantity
-                or order[7] > order[3]  # disclosed quantity
+                order.price == 0
+                or order.qty == 0
+                or order.min_qty > order.qty
+                or order.disclosed_qty > order.qty
             ):
                 continue
-            if order[7] > 0 and order[6]:  # iceberg with fak
+            if order.disclosed_qty > 0 and order.fak:
                 continue
             ords.append(order)
         if len(ords) > 0:
