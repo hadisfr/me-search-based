@@ -15,8 +15,8 @@ class TestCase(object):
         self.traces = self._calc_test_case_trace()
 
     @staticmethod
-    def _translate_ord(ord):
-        return "NewOrderRq\t%s" % "\t".join([str(spec) for spec in ord])
+    def _translate_ord(order):
+        return "NewOrderRq\t%s" % "\t".join([str(spec) for spec in order])
 
     @staticmethod
     def _translate_credit(broker, credit):
@@ -37,7 +37,7 @@ class TestCase(object):
             [TestCase._translate_credit(broker, credit) for (broker, credit) in enumerate(self.credits)],
             [TestCase._translate_share(shareholder, share) for (shareholder, share) in enumerate(self.shares)],
             [TestCase._translate_reference_price(self.reference_price)],
-            [TestCase._translate_ord(ord) for ord in self.ords],
+            [TestCase._translate_ord(order) for order in self.ords],
         ], []))
 
     def _calc_test_case_trace(self):
@@ -76,19 +76,19 @@ class ArrayDecoder:
         ords_encoded = tc_encoded[self.shareholder_numbers + self.broker_numbers + 1:]
         ords = []
         for j in range(self.max_tc_size):
-            ord = [int(spec) for spec in ords_encoded[j * self.ord_encoded_size:(j + 1) * self.ord_encoded_size]]
-            ord[4] = ord[4] == 1  # side
-            ord[6] = ord[6] == 1  # fak
+            order = [int(spec) for spec in ords_encoded[j * self.ord_encoded_size:(j + 1) * self.ord_encoded_size]]
+            order[4] = order[4] == 1  # side
+            order[6] = order[6] == 1  # fak
             if (
-                ord[2] == 0  # pice
-                or ord[3] == 0  # quantity
-                or ord[5] > ord[3]  # minimum quantity
-                or ord[7] > ord[3]  # disclosed quantity
+                order[2] == 0  # pice
+                or order[3] == 0  # quantity
+                or order[5] > order[3]  # minimum quantity
+                or order[7] > order[3]  # disclosed quantity
             ):
                 continue
-            if ord[7] > 0 and ord[6]:  # iceberg with fak
+            if order[7] > 0 and order[6]:  # iceberg with fak
                 continue
-            ords.append(ord)
+            ords.append(order)
         if len(ords) > 0:
             return TestCase(credits, shares, reference_price, ords)
         return None
