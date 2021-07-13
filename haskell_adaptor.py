@@ -19,7 +19,7 @@ class Order:
     disclosed_qty: ...
 
 
-class TestCase(object):
+class TestCase:
     def __init__(self, credits, shares, reference_price, ords):
         self.credits = credits
         self.shares = shares
@@ -82,6 +82,18 @@ class ArrayDecoder:
         self.max_ts_size = max_ts_size
         self.tc_encoded_size = 1 + broker_numbers + shareholder_numbers + 1 + max_tc_size * ord_encoded_size
 
+    def is_order_valid(self, order):
+        if (
+            order.price == 0
+            or order.qty == 0
+            or order.min_qty > order.qty
+            or order.disclosed_qty > order.qty
+        ):
+            return False
+        if order.disclosed_qty > 0 and order.fak:
+            return False
+        return True
+
     def decode_tc(self, tc_encoded):
         credits = tc_encoded[:self.broker_numbers]
         shares = tc_encoded[self.broker_numbers:self.shareholder_numbers + self.broker_numbers]
@@ -93,14 +105,7 @@ class ArrayDecoder:
                             for spec in ords_encoded[j * self.ord_encoded_size:(j + 1) * self.ord_encoded_size]])
             order.side = order.side == 1
             order.fak = order.fak == 1
-            if (
-                order.price == 0
-                or order.qty == 0
-                or order.min_qty > order.qty
-                or order.disclosed_qty > order.qty
-            ):
-                continue
-            if order.disclosed_qty > 0 and order.fak:
+            if not self.is_order_valid(order):
                 continue
             ords.append(order)
         if len(ords) > 0:
