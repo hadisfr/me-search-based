@@ -52,7 +52,7 @@ class TestCase:
 
     @staticmethod
     def _translate_reference_price(reference_price):
-        return "SetReferencePrice\t%d" % (reference_price)
+        return "SetReferencePriceRq\t%d" % (reference_price)
 
     def _translate_ord(self, order):
         raw_original_id = order.order_id
@@ -70,8 +70,6 @@ class TestCase:
 
     def _translate(self):
         return "\n".join(sum([
-            [str(len(self.credits) + len(self.shares) + 1)],
-            [str(len(self.ords))],
             [TestCase._translate_credit(broker, credit) for (broker, credit) in enumerate(self.credits)],
             [TestCase._translate_share(shareholder, share) for (shareholder, share) in enumerate(self.shares)],
             [TestCase._translate_reference_price(self.reference_price)],
