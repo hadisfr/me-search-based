@@ -54,6 +54,30 @@ class TestCase:
     def _translate_reference_price(reference_price):
         return "SetReferencePriceRq\t%d" % (reference_price)
 
+    @staticmethod
+    def _translate_static_price_band_upper_limit(limit):
+        return "SetStaticPriceBandUpperLimitRq\t%0.2f" % (limit)
+
+    @staticmethod
+    def _translate_static_price_band_lower_limit(limit):
+        return "SetStaticPriceBandLowerLimitRq\t%0.2f" % (limit)
+
+    @staticmethod
+    def _translate_tick_size(price):
+        return "SetTickSizeRq\t%d" % (price)
+
+    @staticmethod
+    def _translate_lot_size(qty):
+        return "SetLotSizeRq\t%d" % (qty)
+
+    @staticmethod
+    def _translate_ownership_upper_limit(limit):
+        return "SetOwnershipUpperLimitRq\t%0.2f" % (limit)
+
+    @staticmethod
+    def _translate_total_shares(shares):
+        return "SetTotalSharesRq\t%d" % (shares)
+
     def _translate_ord(self, order):
         raw_original_id = order.order_id
         original_id = raw_original_id % 3
@@ -73,6 +97,12 @@ class TestCase:
             [TestCase._translate_credit(broker, credit) for (broker, credit) in enumerate(self.credits)],
             [TestCase._translate_share(shareholder, share) for (shareholder, share) in enumerate(self.shares)],
             [TestCase._translate_reference_price(self.reference_price)],
+            [TestCase._translate_static_price_band_upper_limit(0.9)],
+            [TestCase._translate_static_price_band_lower_limit(0.9)],
+            [TestCase._translate_tick_size(1)],
+            [TestCase._translate_lot_size(1)],
+            [TestCase._translate_ownership_upper_limit(0.2)],
+            [TestCase._translate_total_shares(100)],
             [self._translate_ord(order) for order in self.ords],
         ], []))
 
