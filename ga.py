@@ -7,7 +7,7 @@ from sys import argv, stderr
 import numpy as np
 from geneticalgorithm import geneticalgorithm as ga
 
-from haskell_adaptor import ArrayDecoder, save_test_suite_feed
+from haskell_adaptor import ArrayDecoder, save_test_suite_feed, get_coverage
 
 
 MAX_PRICE = 10
@@ -27,7 +27,7 @@ VERBOSE = False
 
 
 algorithm_param = {
-    'max_num_iteration': 1000,
+    'max_num_iteration': 1,
     'population_size': 100,
     'mutation_probability': 0.1,
     'elit_ratio': 0.01,
@@ -41,14 +41,14 @@ algorithm_param = {
 def main():
     def fitness(ts_encoded):
         traces = list(map(lambda tc: tc.traces, decoder.decode_ts(ts_encoded)))
-
         ts_size = len(traces)
         covered_stmts = set(chain(*traces))
-        score = 5 * len(covered_stmts) - 1 * ts_size
-
+        # score = 5 * len(covered_stmts) - 1 * ts_size
+        coverage = get_coverage()
+        score = coverage.branch
         if VERBOSE:
             print(ts_size, len(covered_stmts), score)
-        return score
+        return int(score)
 
     if len(argv) != 2:
         print("usage:\t%s <output feed file>" % argv[0], file=stderr)

@@ -1,10 +1,14 @@
+import re
 import subprocess
 from dataclasses import dataclass, astuple
 
-
 TMP_FILE_ADDR = "/tmp/wdajdjkposlf"
-TRACE_CALC_ADDR = "../me-haskell/dist/build/GetTCTraces/GetTCTraces --traces"
-TRACE_FEDD_ADDR = "../me-haskell/dist/build/GetTCTraces/GetTCTraces --trades"
+TRACE_CALC_ADDR = "./GetTCTraces --traces "
+TRACE_FEDD_ADDR = "./GetTCTraces --trades "
+COVERAGE_ADDR = "hpc report GetTCTraces"
+COVERAGE_FILE_ADDR = "../matching-engine-haskell/dist/coverage.report"
+
+WORKING_DIRECTORY = "../matching-engine-haskell/dist"
 
 
 @dataclass
@@ -110,7 +114,8 @@ class TestCase:
         with open(TMP_FILE_ADDR, 'w') as f:
             print(self.translated, file=f)
 
-        process = subprocess.Popen(TRACE_CALC_ADDR.split() + [TMP_FILE_ADDR], stdout=subprocess.PIPE)
+        process = subprocess.Popen(TRACE_CALC_ADDR + TMP_FILE_ADDR, cwd=WORKING_DIRECTORY, shell=True,
+                                   stdout=subprocess.PIPE)
         output, error = process.communicate()
         return set(output.decode("utf-8").split())
 
@@ -118,7 +123,8 @@ class TestCase:
         with open(TMP_FILE_ADDR, 'w') as f:
             print(self.translated, file=f)
 
-        process = subprocess.Popen(TRACE_FEDD_ADDR.split() + [TMP_FILE_ADDR], stdout=subprocess.PIPE)
+        process = subprocess.Popen(TRACE_FEDD_ADDR + TMP_FILE_ADDR, cwd=WORKING_DIRECTORY, shell=True,
+                                   stdout=subprocess.PIPE)
         output, error = process.communicate()
         return output.decode("utf-8")
 
@@ -137,10 +143,10 @@ class ArrayDecoder:
 
     def is_order_valid(self, order):
         if (
-            order.price == 0
-            or order.qty == 0
-            or order.min_qty > order.qty
-            or order.disclosed_qty > order.qty
+                order.price == 0
+                or order.qty == 0
+                or order.min_qty > order.qty
+                or order.disclosed_qty > order.qty
         ):
             return False
         if order.disclosed_qty > 0 and order.fak:
@@ -173,12 +179,32 @@ class ArrayDecoder:
             if not ts_encoded[is_in_idx]:
                 continue
             tc_encoded = ts_encoded[
-                i * self.tc_encoded_size + 1:(i + 1) * self.tc_encoded_size
-            ]
+                         i * self.tc_encoded_size + 1:(i + 1) * self.tc_encoded_size
+                         ]
             tc = self.decode_tc(tc_encoded)
             if tc is not None:
                 ts.append(tc)
         return ts
+
+
+class Coverage:
+    branch: ...
+    expression: ...
+    statement: ...
+
+
+def get_coverage():
+    coverage = Coverage()
+    process = subprocess.Popen(COVERAGE_ADDR, cwd=WORKING_DIRECTORY, shell=True, stdout=subprocess.PIPE)
+    output, error = process.communicate()
+    bc = re.findall(r"(\d+)% boolean", str(output))
+    coverage.branch = bc[0]
+    ec = re.findall(r"(\d+)% expressions", str(output))
+    coverage.expression = ec[0]
+    sc = re.findall(r"(\d+)% alternatives", str(output))
+    coverage.statement = sc[0]
+    print(vars(coverage).items())
+    return coverage
 
 
 def gen_test_suite_feed(ts):
