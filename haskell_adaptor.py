@@ -6,6 +6,7 @@ TMP_FILE_ADDR = "/tmp/wdajdjkposlf"
 TRACE_CALC_ADDR = "./GetTCTraces --traces "
 TRACE_FEDD_ADDR = "./GetTCTraces --trades "
 COVERAGE_ADDR = "hpc report GetTCTraces"
+RESET_COVERAGE = "rm GetTCTraces.tix"
 COVERAGE_FILE_ADDR = "../matching-engine-haskell/dist/coverage.report"
 
 WORKING_DIRECTORY = "../matching-engine-haskell/dist"
@@ -172,6 +173,8 @@ class ArrayDecoder:
         return None
 
     def decode_ts(self, ts_encoded):
+        process = subprocess.Popen(RESET_COVERAGE, cwd=WORKING_DIRECTORY, shell=True, stdout=subprocess.PIPE)
+        process.communicate()
         ts = []
         for i in range(self.max_ts_size):
             is_in_idx = i * self.tc_encoded_size
